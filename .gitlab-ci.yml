@@ -1,0 +1,36 @@
+image: docker:latest
+
+variables:
+    LANG: "UTF-8"
+
+stages:
+    - test
+
+coverage:
+    image: node:20.10.0-alpine3.17
+    stage: test
+    coverage: /All files[^|]*\|[^|]*\s+([\d\.]+)/
+    script:
+        - cd frontend
+        - npm ci -s
+        - npm run coverage 2>/dev/null || true
+        - cd ../backend
+        - npm ci -s
+        - npm run coverage 2>/dev/null || true
+    rules:
+        - if: $CI_COMMIT_MESSAGE =~ /Merge.+branch\s(.*)\sinto(.*)/ && $CI_COMMIT_BRANCH == 'dev'
+    allow_failure: true
+    cache:
+        paths:
+            - node_modules/
+    artifacts:
+        expire_in: 1 days
+        when: on_success
+        paths:
+            - node_modules/
+            - frontend/coverage/
+            - backend/coverage/
+        reports:
+            coverage_report:
+                coverage_format: cobertura
+                path: "**/coverage/cobertura-coverage.xml"

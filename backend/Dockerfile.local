@@ -1,0 +1,18 @@
+# Dockerfile for local development
+FROM node:20.10.0-alpine3.17
+
+WORKDIR /app
+
+COPY package*.json ./
+
+# Install production dependencies.
+RUN npm ci -s
+RUN npm install -g ts-node
+
+# Copy local code to the container image.
+COPY . .
+
+EXPOSE 8000
+
+# Run the web service on container startup.
+ENTRYPOINT ["npm", "run", "dev"]

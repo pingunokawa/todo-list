@@ -1,0 +1,72 @@
+services:
+
+  frontend:
+    build:
+      context: ./frontend
+      # dockerfile for local dev
+      dockerfile: Dockerfile.local
+      # dockerfile: Dockerfile
+      args:
+        REACT_APP_NODE_BACKEND_URI: ${REACT_APP_NODE_BACKEND_URI}
+    depends_on:
+      - backend
+    expose:
+      - "3000"
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_NODE_BACKEND_URI: ${REACT_APP_NODE_BACKEND_URI}
+    # mount for local dev only
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules/ # exclude node_module
+    # end
+    networks:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      # dockerfile for local dev
+      dockerfile: Dockerfile.local
+      # dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000"
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+    # mount for local dev only
+    volumes:
+      - ./backend:/app
+      - /app/node_modules/ # exclude node_module
+    # end
+    networks:
+      - backend
+
+  # Backend connected to postgres database internally without the need to expose the port 5432
+  postgres:
+    image: postgres:14.6-alpine
+    stop_signal: SIGINT
+    restart: always
+    command: -p "5432" -c max_locks_per_transaction=256
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  backend:
+    driver: bridge
